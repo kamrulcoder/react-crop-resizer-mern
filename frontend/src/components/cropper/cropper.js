@@ -1,16 +1,39 @@
 import React from "react";
-import "./CropperFile.css";
+import "./cropper.css";
 
 import Cropper from "react-easy-crop";
 import Slider from "@material-ui/core/Slider";
 import Button from "@material-ui/core/Button";
+import CancelIcon from "@material-ui/icons/Cancel";
 
-import { generateDownload } from "../utils/cropImage";
+import getCroppedImg, { generateDownload } from "../../utils/cropImage";
+import { IconButton, makeStyles } from "@material-ui/core";
+import { SnackbarContext } from "../snackbar/snackbar";
+import { dataURLtoFile } from "../../utils/dataURLtoFile";
 
-export default function CropperFile() {
+const useStyles = makeStyles({
+	iconButton: {
+		position: "absolute",
+		top: "20px",
+		right: "20px",
+	},
+	cancelIcon: {
+		color: "#00a3c8",
+		fontSize: "50px",
+		"&:hover": {
+			color: "red",
+		},
+	},
+});
+
+export default function RenderCropper({ handleCropper }) {
+	const classes = useStyles();
+
 	const inputRef = React.useRef();
 
 	const triggerFileSelectPopup = () => inputRef.current.click();
+
+	const setStateSnackbarContext = React.useContext(SnackbarContext);
 
 	const [image, setImage] = React.useState(null);
 	const [croppedArea, setCroppedArea] = React.useState(null);
@@ -32,11 +55,50 @@ export default function CropperFile() {
 	};
 
 	const onDownload = () => {
+		if (!image)
+			return setStateSnackbarContext(
+				true,
+				"Please select an image!",
+				"warning"
+			);
+
 		generateDownload(image, croppedArea);
+	};
+
+	const onClear = () => {
+		if (!image)
+			return setStateSnackbarContext(
+				true,
+				"Please select an image!",
+				"warning"
+			);
+
+		setImage(null);
+	};
+
+	const onUpload = async () => {
+		if (!image)
+			return setStateSnackbarContext(
+				true,
+				"Please select an image!",
+				"warning"
+			);
+
+		const canvas = await getCroppedImg(image, croppedArea);
+		const canvasDataUrl = canvas.toDataURL("image/jpeg");
+		const convertedUrlToFile = dataURLtoFile(
+			canvasDataUrl,
+			"cropped-image.jpeg"
+		);
+		console.log(convertedUrlToFile);
 	};
 
 	return (
 		<div className='container'>
+			<IconButton className={classes.iconButton} onClick={handleCropper}>
+				<CancelIcon className={classes.cancelIcon} />
+			</IconButton>
+
 			<div className='container-cropper'>
 				{image ? (
 					<>
@@ -59,6 +121,7 @@ export default function CropperFile() {
 								step={0.1}
 								value={zoom}
 								onChange={(e, zoom) => setZoom(zoom)}
+								color='secondary'
 							/>
 						</div>
 					</>
@@ -73,6 +136,15 @@ export default function CropperFile() {
 					onChange={onSelectFile}
 					style={{ display: "none" }}
 				/>
+
+				<Button
+					onClick={() => onClear()}
+					variant='contained'
+					color='primary'
+					style={{ marginRight: "10px" }}
+				>
+					Clear
+				</Button>
 				<Button
 					variant='contained'
 					color='primary'
@@ -81,8 +153,16 @@ export default function CropperFile() {
 				>
 					Choose
 				</Button>
-				<Button variant='contained' color='secondary' onClick={onDownload}>
+				<Button
+					variant='contained'
+					color='secondary'
+					onClick={onDownload}
+					style={{ marginRight: "10px" }}
+				>
 					Download
+				</Button>
+				<Button variant='contained' color='secondary' onClick={onUpload}>
+					Upload
 				</Button>
 			</div>
 		</div>

@@ -1,10 +1,8 @@
-import CropperFile from "./components/CropperFile";
-
-
+import RenderAvatar from "./components/avatar/avatar";
 function App() {
   return (
     <>
-    <CropperFile/>
+    <RenderAvatar />
     </>
   );
 }
